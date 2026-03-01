@@ -11,7 +11,8 @@ RUN apt-get update && apt-get install -y \
     unzip \
     sqlite3 \
     libsqlite3-dev \
-    && docker-php-ext-install pdo_sqlite mbstring exif pcntl bcmath gd zip \
+    libmysqlclient-dev \
+    && docker-php-ext-install pdo_mysql pdo_sqlite mbstring exif pcntl bcmath gd zip \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -34,7 +35,7 @@ RUN if [ ! -f .env ]; then cp .env.example .env; fi && \
     php artisan route:cache && \
     php artisan storage:link
 
-# Создаём директорию для SQLite
+# Создаём директорию для SQLite (резерв)
 RUN mkdir -p /data && chown -R www-data:www-data /data
 
 # Открываем порт
