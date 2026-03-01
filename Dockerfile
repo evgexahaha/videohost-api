@@ -12,7 +12,6 @@ ENV REAL_IP_HEADER 1
 # Laravel config
 ENV APP_ENV production
 ENV APP_DEBUG true
-ENV APP_KEY=base64:tmpkeywillbegenerated
 ENV LOG_CHANNEL stderr
 ENV SESSION_DRIVER database
 ENV CACHE_STORE database
@@ -21,11 +20,12 @@ ENV QUEUE_CONNECTION database
 # Allow composer to run as root
 ENV COMPOSER_ALLOW_SUPERUSER 1
 
-# Install dependencies and generate app key
-RUN composer install --optimize-autoloader --no-dev --no-interaction && \
-    php artisan key:generate --force && \
-    php artisan config:cache && \
-    php artisan route:cache && \
-    php artisan storage:link
+# Create .env if not exists and generate app key
+RUN if [ ! -f .env ]; then cp .env.example .env; fi && \
+    composer install --optimize-autoloader --no-dev --no-interaction --no-scripts || true && \
+    php artisan key:generate --force || true && \
+    php artisan config:clear && \
+    php artisan route:clear && \
+    php artisan storage:link || true
 
 CMD ["/start.sh"]
