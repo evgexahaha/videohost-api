@@ -10,38 +10,32 @@ RUN apt-get update && apt-get install -y \
     libzip-dev \
     unzip \
     sqlite3 \
-    libsqlite3-dev
-
-# Устанавливаем PHP расширения
-RUN docker-php-ext-install pdo_sqlite mbstring exif pcntl bcmath gd zip
+    libsqlite3-dev \
+    && docker-php-ext-install pdo_sqlite mbstring exif pcntl bcmath gd zip \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Устанавливаем Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-
-# Создаём пользователя для безопасности
-RUN useradd -G www-data,root -u 1000 -d /home/app app
-RUN mkdir -p /home/app/.composer && \
-    chown -R app:app /home/app
 
 # Копируем файлы проекта
 WORKDIR /var/www
 COPY . .
 
-# Устанавливаем зависимости Composer
-RUN composer install --optimize-autoloader --no-dev --no-interaction
+# Обновляем composer и устанавливаем зависимости
+RUN composer --version && \
+    composer clear-cache || true && \
+    composer install --optimize-autoloader --no-dev --no-interaction --ignore-platform-reqs || composer install --optimize-autoloader --no-dev --no-interaction
 
 # Создаём .env и генерируем ключ
-RUN cp .env.example .env && \
+RUN if [ ! -f .env ]; then cp .env.example .env; fi && \
     php artisan key:generate --force && \
     php artisan config:cache && \
     php artisan route:cache && \
     php artisan storage:link
 
 # Создаём директорию для SQLite
-RUN mkdir -p /data && chown -R app:app /data
-
-# Переключаемся на пользователя app
-USER app
+RUN mkdir -p /data && chown -R www-data:www-data /data
 
 # Открываем порт
 EXPOSE $PORT
